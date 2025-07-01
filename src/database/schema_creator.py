@@ -8,7 +8,7 @@ from src.database.connection import db_session
 
 SQL_FOLDER = os.path.join(os.path.dirname(__file__), "..", "..", "sql")
 
-def run_sql_file(filename: str) -> None:
+def run_sql_file(filename):
     """Run a SQL file.
 
     Args:
