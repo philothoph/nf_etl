@@ -37,4 +37,4 @@ def get_primary_keys(
             cur.execute(sql, (schema, table_name))
             rows = cur.fetchall()
         # rows is list of 1-tuples like [(col1,), (col2,), ...]
-        return [row[0] for row in rows]
+        return [row[0].upper() for row in rows]

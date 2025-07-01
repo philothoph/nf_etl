@@ -31,7 +31,7 @@ def read_csv_file(filename):
 
     for enc in ENCODINGS:
         try:
-            df = pd.read_csv(file_path, sep=";", encoding=enc)
+            df = pd.read_csv(file_path, dtype=str, sep=";", encoding=enc)
             return df
         except UnicodeDecodeError:
             continue
