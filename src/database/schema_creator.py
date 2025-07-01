@@ -41,7 +41,6 @@ def setup_database():
 
     sql_files = [
         "create_schemas.sql",
-        "create_user.sql",
         "create_tables.sql",
         "create_logtable.sql"
     ]
