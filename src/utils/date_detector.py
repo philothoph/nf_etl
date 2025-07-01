@@ -1,4 +1,4 @@
-def detect_date_columns_by_name(df):
+def detect_date_columns(df):
     """
     Return all columns whose name contains 'date' (case-insensitive).
     """
