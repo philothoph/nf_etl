@@ -1,23 +1,30 @@
+from database.schema_creator import setup_database
 def main():
-    # 1. Initialize logging
-    logger = setup_logging()
+    # Set up the database, creating the necessary schemas, tables, and user
+    setup_database()
+
+    # # 1. Initialize logging
+    # logger = setup_logging()
     
-    # 2. Log ETL start
-    log_etl_start()
+    # # 2. Log ETL start
+    # log_etl_start()
     
-    # 3. Add 5-second pause
-    time.sleep(5)
+    # # 3. Add 5-second pause
+    # time.sleep(5)
     
-    # 4. Process each CSV file
-    for csv_file in csv_files:
-        # Extract
-        df = extract_csv(csv_file)
+    # # 4. Process each CSV file
+    # for csv_file in csv_files:
+    #     # Extract
+    #     df = extract_csv(csv_file)
         
-        # Transform
-        df_clean = transform_data(df, table_name)
+    #     # Transform
+    #     df_clean = transform_data(df, table_name)
         
-        # Load (upsert)
-        load_to_db(df_clean, table_name)
+    #     # Load (upsert)
+    #     load_to_db(df_clean, table_name)
     
-    # 5. Log ETL completion
-    log_etl_end()
+    # # 5. Log ETL completion
+    # log_etl_end()
+
+if __name__ == "__main__":
+    main()

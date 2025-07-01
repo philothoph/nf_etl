@@ -1,0 +1,1 @@
+# Makes database a module

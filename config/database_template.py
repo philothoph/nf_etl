@@ -2,7 +2,7 @@
 DB_CONFIG = {
     'host': 'localhost',
     'database': 'banking_etl',
-    'user': 'your_user',
-    'password': 'your_password',
+    'user': 'DS',
+    'password': 'test',
     'port': 5432
 }
