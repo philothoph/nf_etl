@@ -8,7 +8,7 @@ from database.logger_db import log_file_processing
 import time
 
 def main():
-    # Set up the database, creating the necessary schemas, tables, and user
+    # Set up the database, creating the necessary schemas, tables
     setup_database()
     
 

@@ -38,8 +38,9 @@ def load_to_db(df: pd.DataFrame, table_name: str):
                     execute_values(cur, upsert_sql, records)
                 else:
                     execute_values(cur, insert_sql, records)
-            except StringDataRightTruncation:
+            except StringDataRightTruncation as e:
                 print(f"StringDataRightTruncation error for table '{table_name}'")
+                print(e.diag.column_name)
             except CardinalityViolation:
                 conn.rollback()
                 df_clean = df_clean.drop_duplicates(subset=primary_keys, keep="last")
