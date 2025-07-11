@@ -6,6 +6,7 @@ from utils.date_detector import detect_date_columns
 from utils.get_primary_keys import get_primary_keys
 from database.connection import db_session
 from database.logger_db import log_file_processing
+from utils.start_procedures import start_procedures
 import time
 
 def main():
@@ -30,6 +31,8 @@ def main():
                     # Load the DataFrame into the database       
                     load_to_db(df, fname.removesuffix(".csv").upper())
                 time.sleep(5)
+
+    start_procedures()
 
 
 if __name__ == "__main__":

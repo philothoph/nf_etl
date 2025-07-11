@@ -39,7 +39,7 @@ def setup_database():
         Exception: If there is an error executing any of the SQL files.
     """
 
-    sql_files = [f for f in os.listdir(SQL_FOLDER) if f.endswith(".sql")]
+    sql_files = [f for f in os.listdir(SQL_FOLDER) if f.endswith(".sql") and f.startswith("create_")]
 
 
     for file in sql_files:
