@@ -1,7 +1,8 @@
+-- fill dm_account_turnover_f
 CREATE OR REPLACE PROCEDURE "DS".fill_account_turnover_f(i_OnDate DATE)
 AS $$
 DECLARE
-  v_start TIMESTAMP = NOW();
+  v_start TIMESTAMP = CLOCK_TIMESTAMP();
   v_log INTEGER;
 BEGIN
   -- logging start
@@ -61,12 +62,12 @@ BEGIN
 
   -- logging end
   UPDATE "LOGS".procedure_logs
-    SET end_time = NOW()
+    SET end_time = CLOCK_TIMESTAMP()
   WHERE id = v_log;
 END;
 $$ LANGUAGE plpgsql;
 
-
+-- fill dm_account_balance_f
 CREATE OR REPLACE PROCEDURE "DS".fill_account_balance_f(i_OnDate DATE)
 AS $$
 DECLARE
@@ -83,7 +84,7 @@ DECLARE
     v_new_balance_rub NUMERIC(23,8);
 BEGIN
     -- logging start
-    v_start = NOW();
+    v_start = CLOCK_TIMESTAMP();
     INSERT INTO "LOGS".procedure_logs (procedure_name, run_date, start_time)
       VALUES ('fill_account_balance_f', i_OnDate, v_start)
       RETURNING id INTO v_log;
@@ -164,9 +165,169 @@ BEGIN
     
     -- Logging end
     UPDATE "LOGS".procedure_logs
-    SET end_time = NOW()
+    SET end_time = CLOCK_TIMESTAMP()
     WHERE id = v_log;
 
 END;
 $$ LANGUAGE plpgsql;
 
+-- fill DM_F101_ROUND_F
+CREATE OR REPLACE PROCEDURE "DM".fill_f101_round_f(i_OnDate DATE)
+AS $$
+DECLARE
+  v_start TIMESTAMP;
+  v_log INTEGER;
+  v_first_day DATE;
+  v_last_day DATE;
+  v_balance_date DATE;
+BEGIN
+  -- logging start
+  v_start := CLOCK_TIMESTAMP();
+  INSERT INTO "LOGS".procedure_logs (procedure_name, run_date, start_time)
+    VALUES ('fill_f101_round_f', i_OnDate, v_start)
+    RETURNING id INTO v_log;
+
+  -- calculate report dates
+    v_first_day := i_OnDate - INTERVAL '1 month';
+    v_last_day := i_OnDate - INTERVAL '1 day';
+    v_balance_date := v_first_day - INTERVAL '1 day';
+
+  -- remove old data
+    DELETE FROM "DM"."DM_F101_ROUND_F" WHERE from_date = v_first_day AND to_date = v_last_day;
+
+  -- insert new data
+    WITH account_data AS (
+        SELECT 
+            acc.account_rk,
+            SUBSTRING(acc.account_number, 1, 5) as ledger_account,
+            acc.char_type as characteristic,
+            acc.currency_code,
+            las.chapter
+        FROM "DS"."MD_ACCOUNT_D" acc
+        LEFT JOIN "DS"."MD_LEDGER_ACCOUNT_S" las 
+            ON las.ledger_account::text = SUBSTRING(acc.account_number, 1, 5)
+            AND las.start_date <= v_last_day
+            AND (las.end_date IS NULL OR las.end_date >= v_first_day)
+        WHERE 
+            acc.data_actual_date <= v_last_day
+            AND (acc.data_actual_end_date IS NULL OR acc.data_actual_end_date >= v_first_day)
+    ),
+    
+    turnover_data AS (
+        SELECT 
+            account_rk,
+            SUM(debet_amount_rub) as debet_amount_rub,
+            SUM(credit_amount_rub) as credit_amount_rub
+        FROM "DM"."DM_ACCOUNT_TURNOVER_F"
+        WHERE on_date >= v_first_day AND on_date <= v_last_day
+        GROUP BY account_rk
+    ),
+    
+    balance_in_data AS (
+        SELECT 
+            account_rk,
+            balance_out_rub
+        FROM "DM"."DM_ACCOUNT_BALANCE_F"
+        WHERE on_date = v_balance_date
+    ),
+    
+    balance_out_data AS (
+        SELECT 
+            account_rk,
+            balance_out_rub
+        FROM "DM"."DM_ACCOUNT_BALANCE_F"
+        WHERE on_date = v_last_day
+    )
+    
+    INSERT INTO "DM"."DM_F101_ROUND_F" (
+        from_date,
+        to_date,
+        chapter,
+        ledger_account,
+        characteristic,
+        balance_in_rub,
+        balance_in_val,
+        balance_in_total,
+        turn_deb_rub,
+        turn_deb_val,
+        turn_deb_total,
+        turn_cre_rub,
+        turn_cre_val,
+        turn_cre_total,
+        balance_out_rub,
+        balance_out_val,
+        balance_out_total
+    )
+    SELECT 
+        v_first_day,
+        v_last_day,
+        ad.chapter,
+        ad.ledger_account,
+        ad.characteristic,
+        
+        -- Incoming balances (day before reporting period)
+        COALESCE(SUM(CASE WHEN ad.currency_code IN ('810', '643') 
+                         THEN bi.balance_out_rub 
+                         ELSE 0 END), 0) as balance_in_rub,
+        COALESCE(SUM(CASE WHEN ad.currency_code NOT IN ('810', '643') 
+                         THEN bi.balance_out_rub 
+                         ELSE 0 END), 0) as balance_in_val,
+        COALESCE(SUM(bi.balance_out_rub), 0) as balance_in_total,
+        
+        -- Debit turnovers for reporting period
+        COALESCE(SUM(CASE WHEN ad.currency_code IN ('810', '643') 
+                         THEN td.debet_amount_rub 
+                         ELSE 0 END), 0) as turn_deb_rub,
+        COALESCE(SUM(CASE WHEN ad.currency_code NOT IN ('810', '643') 
+                         THEN td.debet_amount_rub 
+                         ELSE 0 END), 0) as turn_deb_val,
+        COALESCE(SUM(td.debet_amount_rub), 0) as turn_deb_total,
+        
+        -- Credit turnovers for reporting period
+        COALESCE(SUM(CASE WHEN ad.currency_code IN ('810', '643') 
+                         THEN td.credit_amount_rub 
+                         ELSE 0 END), 0) as turn_cre_rub,
+        COALESCE(SUM(CASE WHEN ad.currency_code NOT IN ('810', '643') 
+                         THEN td.credit_amount_rub 
+                         ELSE 0 END), 0) as turn_cre_val,
+        COALESCE(SUM(td.credit_amount_rub), 0) as turn_cre_total,
+        
+        -- Outgoing balances (last day of reporting period)
+        COALESCE(SUM(CASE WHEN ad.currency_code IN ('810', '643') 
+                         THEN bo.balance_out_rub 
+                         ELSE 0 END), 0) as balance_out_rub,
+        COALESCE(SUM(CASE WHEN ad.currency_code NOT IN ('810', '643') 
+                         THEN bo.balance_out_rub 
+                         ELSE 0 END), 0) as balance_out_val,
+        COALESCE(SUM(bo.balance_out_rub), 0) as balance_out_total
+    
+    FROM account_data ad
+    LEFT JOIN balance_in_data bi ON bi.account_rk = ad.account_rk
+    LEFT JOIN balance_out_data bo ON bo.account_rk = ad.account_rk
+    LEFT JOIN turnover_data td ON td.account_rk = ad.account_rk
+    
+    WHERE 
+        -- Only include accounts that have some activity or balances
+        (bi.balance_out_rub IS NOT NULL 
+         OR bo.balance_out_rub IS NOT NULL 
+         OR td.debet_amount_rub IS NOT NULL 
+         OR td.credit_amount_rub IS NOT NULL)
+    
+    GROUP BY 
+        ad.chapter,
+        ad.ledger_account,
+        ad.characteristic
+    
+    HAVING 
+        -- Only include records where at least one value is non-zero
+        COALESCE(SUM(bi.balance_out_rub), 0) != 0
+        OR COALESCE(SUM(bo.balance_out_rub), 0) != 0
+        OR COALESCE(SUM(td.debet_amount_rub), 0) != 0
+        OR COALESCE(SUM(td.credit_amount_rub), 0) != 0;
+
+  -- logging end
+  UPDATE "LOGS".procedure_logs
+  SET end_time = CLOCK_TIMESTAMP()
+  WHERE id = v_log;
+END;
+$$ LANGUAGE plpgsql;
