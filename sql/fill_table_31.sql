@@ -18,6 +18,6 @@ LEFT JOIN
     "DS"."MD_ACCOUNT_D" acc ON fb.account_rk = acc.account_rk
 LEFT JOIN 
     "DS"."MD_EXCHANGE_RATE_D" er ON acc.currency_rk = er.currency_rk
+    AND '2017-12-31'::DATE BETWEEN er.data_actual_date AND er.data_actual_end_date
 WHERE 
     fb.on_date = '2017-12-31'::DATE
-    AND '2017-12-31'::DATE BETWEEN er.data_actual_date AND er.data_actual_end_date
