@@ -28,3 +28,15 @@ BEGIN
   END LOOP;
 END
 $$ LANGUAGE plpgsql;
+
+
+-- 3) F101 for Jan-2018
+DO
+$$
+DECLARE
+  dt    DATE := '2018-02-01';
+BEGIN
+  RAISE NOTICE 'Calling dm.fill_f101_round_f for %', dt;
+  CALL "DM".fill_f101_round_f(dt);
+END
+$$ LANGUAGE plpgsql;
