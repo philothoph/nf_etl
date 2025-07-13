@@ -17,12 +17,12 @@ CREATE TABLE
     );
 
 CREATE TABLE
-    IF NOT EXISTS "DM"."DM.DM_F101_ROUND_F" (
+    IF NOT EXISTS "DM"."DM_F101_ROUND_F" (
         from_date DATE,
         to_date DATE,
         chapter CHAR(1),
         ledger_account CHAR(5),
-        charasteristic CHAR(1),
+        characteristic CHAR(1),
         balance_in_rub NUMERIC(23, 8),
         balance_in_val NUMERIC(23, 8),
         balance_in_total NUMERIC(23, 8),

@@ -48,3 +48,4 @@ def setup_database():
         except Exception as e:
             print(f"Error running {file}: {e}")
 
+    run_sql_file("fill_table_31.sql")

@@ -58,7 +58,7 @@ BEGIN
     ON acc.account_rk = t.account_rk
   LEFT JOIN "DS"."MD_EXCHANGE_RATE_D" er
     ON er.currency_rk = acc.currency_rk
-   AND i_OnDate BETWEEN er.data_actual_date AND er.data_actual_end_date;
+    AND i_OnDate BETWEEN er.data_actual_date AND er.data_actual_end_date;
 
   -- logging end
   UPDATE "LOGS".procedure_logs
@@ -74,14 +74,14 @@ DECLARE
     v_start TIMESTAMP;
     v_log INTEGER;
     rec_account RECORD;
-    v_prev_balance_out NUMERIC(23,8);
-    v_prev_balance_rub NUMERIC(23,8);
-    v_debet_amount NUMERIC(23,8);
-    v_credit_amount NUMERIC(23,8);
-    v_debet_amount_rub NUMERIC(23,8);
-    v_credit_amount_rub NUMERIC(23,8);
-    v_new_balance_out NUMERIC(23,8);
-    v_new_balance_rub NUMERIC(23,8);
+    v_prev_balance_out NUMERIC(23,8) := 0;
+    v_prev_balance_rub NUMERIC(23,8) := 0;
+    v_debet_amount NUMERIC(23,8) := 0;
+    v_credit_amount NUMERIC(23,8) := 0;
+    v_debet_amount_rub NUMERIC(23,8) := 0;
+    v_credit_amount_rub NUMERIC(23,8) := 0;
+    v_new_balance_out NUMERIC(23,8) := 0;
+    v_new_balance_rub NUMERIC(23,8) := 0;
 BEGIN
     -- logging start
     v_start = CLOCK_TIMESTAMP();
@@ -110,8 +110,10 @@ BEGIN
             v_prev_balance_rub
         FROM "DM"."DM_ACCOUNT_BALANCE_F"
         WHERE account_rk = rec_account.account_rk
-          AND on_date = i_OnDate - INTERVAL '1 day'
-        LIMIT 1;
+          AND on_date = i_OnDate - INTERVAL '1 day';
+
+        -- debug
+        -- RAISE notice 'account_rk: %, prev_balance_out: %, prev_balance_rub: %', rec_account.account_rk, v_prev_balance_out, v_prev_balance_rub;
         
         -- If balance not found, set 0
         IF v_prev_balance_out IS NULL THEN
@@ -135,8 +137,27 @@ BEGIN
             v_credit_amount_rub
         FROM "DM"."DM_ACCOUNT_TURNOVER_F"
         WHERE account_rk = rec_account.account_rk
-          AND on_date = i_OnDate
-        LIMIT 1;
+          AND on_date = i_OnDate;
+
+        -- if turnover not found
+        IF v_debet_amount IS NULL THEN
+            v_debet_amount := 0;
+        END IF;
+        
+        IF v_credit_amount IS NULL THEN
+            v_credit_amount := 0;
+        END IF;
+        
+        IF v_debet_amount_rub IS NULL THEN
+            v_debet_amount_rub := 0;
+        END IF;
+        
+        IF v_credit_amount_rub IS NULL THEN
+            v_credit_amount_rub := 0;
+        END IF;
+
+        --debug
+        -- raise notice 'account_rk: %, debet_amount: %, credit_amount: %, debet_amount_rub: %, credit_amount_rub: %', rec_account.account_rk, v_debet_amount, v_credit_amount, v_debet_amount_rub, v_credit_amount_rub;
         
         -- Calculate new balance
         IF rec_account.char_type = 'А' THEN
@@ -306,25 +327,11 @@ BEGIN
     LEFT JOIN balance_out_data bo ON bo.account_rk = ad.account_rk
     LEFT JOIN turnover_data td ON td.account_rk = ad.account_rk
     
-    WHERE 
-        -- Only include accounts that have some activity or balances
-        (bi.balance_out_rub IS NOT NULL 
-         OR bo.balance_out_rub IS NOT NULL 
-         OR td.debet_amount_rub IS NOT NULL 
-         OR td.credit_amount_rub IS NOT NULL)
-    
     GROUP BY 
         ad.chapter,
         ad.ledger_account,
-        ad.characteristic
+        ad.characteristic;
     
-    HAVING 
-        -- Only include records where at least one value is non-zero
-        COALESCE(SUM(bi.balance_out_rub), 0) != 0
-        OR COALESCE(SUM(bo.balance_out_rub), 0) != 0
-        OR COALESCE(SUM(td.debet_amount_rub), 0) != 0
-        OR COALESCE(SUM(td.credit_amount_rub), 0) != 0;
-
   -- logging end
   UPDATE "LOGS".procedure_logs
   SET end_time = CLOCK_TIMESTAMP()
