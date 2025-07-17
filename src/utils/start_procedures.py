@@ -1,6 +1,5 @@
 from database.schema_creator import run_sql_file
 import os
-import time
 
 SQL_FOLDER = os.path.join(os.path.dirname(__file__), "..", "..", "sql")
 
