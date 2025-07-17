@@ -2,20 +2,20 @@ from contextlib import contextmanager
 from datetime import datetime
 
 @contextmanager
-def log_file_processing(db_connection, file_name):
+def log_file_processing(db_connection, file_name, action):
     """Simple context manager for logging file processing"""
     
     # Start logging
     start_time = datetime.now()
     
     query = """
-    INSERT INTO "LOGS".etl_logs (start_time, file_name)
-    VALUES (%s, %s)
+    INSERT INTO "LOGS".etl_logs (start_time, file_name, action)
+    VALUES (%s, %s, %s)
     RETURNING id
     """
     
     with db_connection.cursor() as cursor:
-        cursor.execute(query, (start_time, file_name))
+        cursor.execute(query, (start_time, file_name, action))
         log_id = cursor.fetchone()[0]
         db_connection.commit()
     
