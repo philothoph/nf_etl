@@ -1,5 +1,6 @@
 import os
 import sys
+from psycopg2.errors import InvalidSchemaName
 
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -28,6 +29,9 @@ def setup_database():
     for file in sql_files:
         try:
             run_sql_file(file)
+        except InvalidSchemaName as e:
+            sql_files.append(file)
+            continue
         except Exception as e:
             print(f"Error running {file}: {e}")
 
