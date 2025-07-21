@@ -35,4 +35,10 @@ CREATE TABLE
         balance_out_rub NUMERIC(23, 8),
         balance_out_val NUMERIC(23, 8),
         balance_out_total NUMERIC(23, 8)
-    )
+    );
+
+CREATE TABLE
+    IF NOT EXISTS "DM"."DM_F101_ROUND_F_V2" (
+        LIKE "DM"."DM_F101_ROUND_F"
+        INCLUDING ALL
+    );
