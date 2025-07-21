@@ -25,8 +25,7 @@ def load_to_db(df: pd.DataFrame, table_name: str, chunk_size: int = 5000, schema
 
     # Replace pandas values with None so psycopg2 writes SQL NULL
     df_clean = df.where(pd.notnull(df), None)
-    primary_keys = get_primary_keys(f'"{schema}"."{table_name}"')
-    print(f"Primary keys: {primary_keys}")
+    primary_keys = get_primary_keys(table_name, schema=schema)
     print(f"Loading {len(df_clean)} rows into '{schema}.{table_name}' in chunks of {chunk_size}...")
 
     cols = ", ".join(df_clean.columns)
