@@ -11,13 +11,13 @@ def main():
     etl_process()
 
     # Run stored procedures
-    # start_procedures()
+    start_procedures()
 
-    # # Export data to CSV file
-    # table_name = '"DM"."DM_F101_ROUND_F"'
-    # csv_name = "DM_F101_ROUND_F_v2"
+    # Export data to CSV file
+    table_name = '"DM"."DM_F101_ROUND_F"'
+    csv_name = "DM_F101_ROUND_F_v2" # name chosen to be loaded into the database later
 
-    # export_table_to_csv(table_name, csv_name)
+    export_table_to_csv(table_name, csv_name)
 
 
 if __name__ == "__main__":
