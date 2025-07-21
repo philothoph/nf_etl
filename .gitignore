@@ -1,3 +1,4 @@
 config/database.py
 __pycache__
-data
+data/*
+!data/.gitkeep
